@@ -1,0 +1,190 @@
+{
+  "name": "Career Coach AI",
+  "description": "AI-powered career coaching assistant with RAG and tools for resume analysis, interview preparation, and career guidance",
+  "version": "1.0.0",
+  "tools": [
+    {
+      "name": "analyze_resume",
+      "description": "Analyze resume text and provide detailed feedback on content, structure, and optimization",
+      "endpoint": "http://localhost:8000/tools/analyze_resume",
+      "method": "POST",
+      "parameters": {
+        "resume_text": "string",
+        "use_llm": "boolean"
+      }
+    },
+    {
+      "name": "mock_interview",
+      "description": "Generate role-specific interview questions and preparation tips",
+      "endpoint": "http://localhost:8000/tools/mock_interview",
+      "method": "POST",
+      "parameters": {
+        "position": "string",
+        "use_llm": "boolean"
+      }
+    },
+    {
+      "name": "career_guides",
+      "description": "Retrieve curated career tips and advice from the knowledge base",
+      "endpoint": "http://localhost:8000/resources/career_guides/featured",
+      "method": "POST",
+      "parameters": {
+        "query": "string",
+        "top_k": "integer",
+        "use_llm": "boolean"
+      }
+    },
+    {
+      "name": "chat",
+      "description": "Main chat endpoint with ReAct pattern for comprehensive career assistance",
+      "endpoint": "http://localhost:8000/chat",
+      "method": "POST",
+      "parameters": {
+        "message": "string",
+        "use_rag": "boolean",
+        "use_tools": "boolean"
+      }
+    }
+  ],
+  "resources": [
+    {
+      "name": "resume_writing_guide",
+      "path": "./data/resume_writing_guide.md",
+      "description": "Comprehensive guide for writing effective resumes"
+    },
+    {
+      "name": "interview_preparation_guide",
+      "path": "./data/interview_preparation_guide.md",
+      "description": "Complete guide for interview preparation and success"
+    },
+    {
+      "name": "salary_negotiation_guide",
+      "path": "./data/salary_negotiation_guide.md",
+      "description": "Strategies and tips for salary negotiation"
+    },
+    {
+      "name": "career_transition_guide",
+      "path": "./data/career_transition_guide.md",
+      "description": "Guide for transitioning between careers"
+    },
+    {
+      "name": "networking_strategies",
+      "path": "./data/networking_strategies.md",
+      "description": "Effective networking strategies for career growth"
+    },
+    {
+      "name": "personal_branding_guide",
+      "path": "./data/personal_branding_guide.md",
+      "description": "Building and maintaining personal brand"
+    },
+    {
+      "name": "leadership_development_guide",
+      "path": "./data/leadership_development_guide.md",
+      "description": "Developing leadership skills and qualities"
+    },
+    {
+      "name": "remote_work_guide",
+      "path": "./data/remote_work_guide.md",
+      "description": "Thriving in remote work environments"
+    },
+    {
+      "name": "portfolio_building_guide",
+      "path": "./data/portfolio_building_guide.md",
+      "description": "Creating compelling portfolios for various fields"
+    },
+    {
+      "name": "skills_development_guide",
+      "path": "./data/skills_development_guide.md",
+      "description": "Strategies for continuous skill development"
+    },
+    {
+      "name": "job_search_strategies",
+      "path": "./data/job_search_strategies.md",
+      "description": "Effective job search strategies and techniques"
+    },
+    {
+      "name": "entrepreneurship_guide",
+      "path": "./data/entrepreneurship_guide.md",
+      "description": "Starting and growing entrepreneurial ventures"
+    },
+    {
+      "name": "freelancing_guide",
+      "path": "./data/freelancing_guide.md",
+      "description": "Successfully navigating freelance career paths"
+    },
+    {
+      "name": "first_job_search_guide",
+      "path": "./data/first_job_search_guide.md",
+      "description": "Guide for first-time job seekers"
+    },
+    {
+      "name": "career_change_seniors_guide",
+      "path": "./data/career_change_seniors_guide.md",
+      "description": "Career transition guidance for senior professionals"
+    }
+  ],
+  "configuration": {
+    "server": {
+      "host": "0.0.0.0",
+      "port": 8000,
+      "base_url": "http://localhost:8000"
+    },
+    "llm": {
+      "default_provider": "gemini",
+      "gemini_model": "gemini-2.5-flash",
+      "openai_model": "gpt-4o-mini",
+      "default_max_tokens": 1000,
+      "intent_analysis_max_tokens": 100
+    },
+    "rag": {
+      "data_dir": "./data",
+      "vector_db_path": "./data/vector_db",
+      "chunk_size": 1000,
+      "chunk_overlap": 200,
+      "embedding_model": "all-MiniLM-L6-v2",
+      "top_k_results": 5,
+      "chat_rag_top_k": 3
+    },
+    "environment_variables": {
+      "GOOGLE_API_KEY": "Required for Gemini LLM",
+      "OPENAI_API_KEY": "Optional backup for OpenAI",
+      "DEFAULT_LLM": "gemini",
+      "GEMINI_MODEL": "gemini-2.5-flash",
+      "OPENAI_MODEL": "gpt-4o-mini",
+      "DEFAULT_MAX_TOKENS": "1000",
+      "INTENT_ANALYSIS_MAX_TOKENS": "100",
+      "CHAT_RAG_TOP_K": "3"
+    }
+  },
+  "setup_instructions": [
+    "1. Copy env.example to .env and fill in your API keys",
+    "2. Install dependencies: pip install -r requirements.txt",
+    "3. Start the server: python -m mcp_server.server",
+    "4. Access the API at http://localhost:8000",
+    "5. View API docs at http://localhost:8000/docs"
+  ],
+  "api_endpoints": {
+    "health_check": "GET /health",
+    "server_info": "GET /",
+    "resume_analysis": "POST /tools/analyze_resume",
+    "mock_interview": "POST /tools/mock_interview",
+    "career_guides": "POST /resources/career_guides/featured",
+    "chat": "POST /chat"
+  },
+  "features": [
+    "Resume analysis with AI-powered feedback",
+    "Role-specific interview question generation",
+    "Career guidance using RAG (Retrieval-Augmented Generation)",
+    "ReAct pattern implementation for intelligent responses",
+    "Multi-LLM support (Gemini, OpenAI) with fallback",
+    "Comprehensive career knowledge base",
+    "Real-time chat assistance",
+    "Configurable via environment variables"
+  ],
+  "testing": {
+    "unit_tests": "pytest tests/unit/",
+    "integration_tests": "pytest tests/integration/",
+    "all_tests": "pytest tests/",
+    "coverage": "pytest tests/ --cov=. --cov-report=html"
+  }
+} 
