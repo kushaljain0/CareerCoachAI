@@ -1,0 +1,92 @@
+[
+  {
+    "query": "Can you review my resume for a software engineer role?",
+    "category": "resume_analysis",
+    "expected_tools": ["analyze_resume"],
+    "expected_response_type": "feedback"
+  },
+  {
+    "query": "What are common interview questions for a marketing manager?",
+    "category": "interview_preparation",
+    "expected_tools": ["mock_interview"],
+    "expected_response_type": "questions"
+  },
+  {
+    "query": "How do I negotiate a higher salary after a job offer?",
+    "category": "salary_negotiation",
+    "expected_tools": ["career_guides"],
+    "expected_response_type": "tips"
+  },
+  {
+    "query": "Tips for transitioning from teaching to instructional design?",
+    "category": "career_transition",
+    "expected_tools": ["career_guides"],
+    "expected_response_type": "guidance"
+  },
+  {
+    "query": "What should I include in my LinkedIn profile summary?",
+    "category": "personal_branding",
+    "expected_tools": ["career_guides"],
+    "expected_response_type": "tips"
+  },
+  {
+    "query": "How do I answer 'Tell me about yourself' in an interview?",
+    "category": "interview_preparation",
+    "expected_tools": ["career_guides"],
+    "expected_response_type": "guidance"
+  },
+  {
+    "query": "Can you help me prepare for a product manager interview?",
+    "category": "interview_preparation",
+    "expected_tools": ["mock_interview"],
+    "expected_response_type": "questions"
+  },
+  {
+    "query": "What are the best strategies for networking at conferences?",
+    "category": "networking",
+    "expected_tools": ["career_guides"],
+    "expected_response_type": "strategies"
+  },
+  {
+    "query": "How do I highlight leadership skills on my resume?",
+    "category": "resume_analysis",
+    "expected_tools": ["analyze_resume", "career_guides"],
+    "expected_response_type": "feedback"
+  },
+  {
+    "query": "Advice for switching from finance to data science?",
+    "category": "career_transition",
+    "expected_tools": ["career_guides"],
+    "expected_response_type": "guidance"
+  },
+  {
+    "query": "What are the key skills needed for remote work?",
+    "category": "remote_work",
+    "expected_tools": ["career_guides"],
+    "expected_response_type": "skills"
+  },
+  {
+    "query": "How do I build a portfolio for a UX designer role?",
+    "category": "portfolio_building",
+    "expected_tools": ["career_guides"],
+    "expected_response_type": "guidance"
+  },
+  {
+    "query": "What are effective ways to follow up after an interview?",
+    "category": "interview_preparation",
+    "expected_tools": ["career_guides"],
+    "expected_response_type": "tips"
+  },
+  {
+    "query": "How do I handle a gap in my employment history?",
+    "category": "resume_analysis",
+    "expected_tools": ["analyze_resume", "career_guides"],
+    "expected_response_type": "guidance"
+  },
+  {
+    "query": "What are the latest trends in digital marketing?",
+    "category": "industry_trends",
+    "expected_tools": ["career_guides"],
+    "expected_response_type": "information"
+  }
+] 

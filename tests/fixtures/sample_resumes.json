@@ -1,0 +1,22 @@
+{
+  "software_engineer": {
+    "text": "JOHN DOE\nSoftware Engineer\njohn.doe@email.com | (555) 123-4567 | linkedin.com/in/johndoe\n\nSUMMARY\nExperienced software engineer with 3 years developing web applications using React, Node.js, and Python. Passionate about creating scalable solutions and collaborating with cross-functional teams.\n\nEXPERIENCE\nSoftware Engineer, Tech Corp (2021-2024)\n- Developed React applications for client projects, improving user engagement by 25%\n- Collaborated with team of 5 developers using Git and Agile methodologies\n- Implemented new features and bug fixes, reducing system downtime by 40%\n- Led code reviews and mentored junior developers\n\nSoftware Developer Intern, Startup Inc (2020-2021)\n- Built RESTful APIs using Node.js and Express\n- Worked with MongoDB and PostgreSQL databases\n- Participated in daily standups and sprint planning\n\nSKILLS\nProgramming: JavaScript, React, Node.js, Python, SQL\nTools: Git, Docker, AWS, Jenkins\nSoft Skills: Team collaboration, Problem solving, Communication",
+    "expected_feedback": ["action verbs", "quantifiable achievements", "skills section"]
+  },
+  "data_scientist": {
+    "text": "JANE SMITH\nData Scientist\njane.smith@email.com | (555) 987-6543 | linkedin.com/in/janesmith\n\nSUMMARY\nData scientist with 2 years experience in machine learning, statistical analysis, and data visualization. Skilled in Python, R, and SQL with expertise in predictive modeling.\n\nEXPERIENCE\nData Scientist, Analytics Corp (2022-2024)\n- Built machine learning models that improved prediction accuracy by 30%\n- Analyzed large datasets using Python, pandas, and scikit-learn\n- Created interactive dashboards using Tableau and Power BI\n- Collaborated with business stakeholders to define KPIs and metrics\n\nData Analyst, Research Institute (2021-2022)\n- Conducted statistical analysis on research data using R and SPSS\n- Created data visualizations and reports for stakeholders\n- Maintained data quality and integrity standards\n\nSKILLS\nTechnical: Python, R, SQL, TensorFlow, PyTorch, Tableau\nMachine Learning: Classification, Regression, Clustering, NLP\nStatistics: Hypothesis testing, A/B testing, Experimental design",
+    "expected_feedback": ["quantifiable achievements", "technical skills", "machine learning"]
+  },
+  "product_manager": {
+    "text": "MIKE JOHNSON\nProduct Manager\nmike.johnson@email.com | (555) 456-7890 | linkedin.com/in/mikejohnson\n\nSUMMARY\nProduct manager with 4 years experience leading product development from ideation to launch. Proven track record of delivering user-centric solutions that drive business growth.\n\nEXPERIENCE\nSenior Product Manager, Tech Startup (2022-2024)\n- Led product strategy and roadmap for mobile app with 100K+ users\n- Managed cross-functional team of 8 engineers and designers\n- Increased user retention by 35% through feature optimization\n- Conducted user research and A/B testing to inform product decisions\n\nProduct Manager, Enterprise Corp (2020-2022)\n- Managed B2B SaaS product with $2M annual revenue\n- Collaborated with sales and marketing teams on go-to-market strategies\n- Defined product requirements and user stories for development team\n- Analyzed market trends and competitive landscape\n\nSKILLS\nProduct Management: Roadmapping, User research, A/B testing, Agile\nTools: Jira, Figma, Mixpanel, Google Analytics\nBusiness: Market analysis, Competitive research, Go-to-market strategy",
+    "expected_feedback": ["quantifiable achievements", "leadership", "user-centric approach"]
+  },
+  "short_resume": {
+    "text": "ALICE BROWN\nMarketing Specialist\nalice.brown@email.com\n\nEXPERIENCE\nMarketing Specialist, Small Company (2023-2024)\n- Managed social media accounts\n- Created marketing materials\n\nSKILLS\nSocial media, Content creation",
+    "expected_feedback": ["short", "add more detail", "objective or summary"]
+  },
+  "long_resume": {
+    "text": "ROBERT WILSON\nSenior Developer\nrobert.wilson@email.com\n\nSUMMARY\n" + "Very detailed summary with extensive background information. " * 50 + "\n\nEXPERIENCE\n" + "Detailed job description with many bullet points. " * 100 + "\n\nSKILLS\n" + "Comprehensive list of skills. " * 30,
+    "expected_feedback": ["too long", "condensing", "1-2 pages"]
+  }
+} 

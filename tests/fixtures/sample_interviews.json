@@ -1,0 +1,88 @@
+{
+  "software_engineer": {
+    "technical_questions": [
+      "Describe a challenging software bug you fixed and how you approached it.",
+      "How do you ensure code quality in your projects?",
+      "Explain a time you worked in a team to deliver a project on time.",
+      "What is your experience with version control systems like Git?",
+      "How do you keep your technical skills up to date?",
+      "Describe a time you had to learn a new technology quickly.",
+      "How do you handle conflicting requirements from stakeholders?",
+      "What's your approach to code review and feedback?"
+    ],
+    "behavioral_questions": [
+      "Tell me about a time you had to work with a difficult team member.",
+      "Describe a situation where you had to make a technical decision with incomplete information.",
+      "How do you handle tight deadlines and pressure?",
+      "Tell me about a project that failed and what you learned from it."
+    ]
+  },
+  "data_scientist": {
+    "technical_questions": [
+      "Describe a machine learning project you've worked on from start to finish.",
+      "How do you handle missing or inconsistent data?",
+      "Explain the difference between supervised and unsupervised learning with examples.",
+      "How do you evaluate model performance beyond accuracy?",
+      "What tools and libraries do you use for data analysis?",
+      "Describe a time you had to explain complex technical concepts to non-technical stakeholders.",
+      "How do you stay updated with the latest developments in data science?",
+      "What's your approach to feature engineering?"
+    ],
+    "behavioral_questions": [
+      "Tell me about a time you had to present complex data findings to executives.",
+      "Describe a situation where your model didn't perform as expected.",
+      "How do you handle ethical considerations in data science?",
+      "Tell me about a time you had to work with a large, messy dataset."
+    ]
+  },
+  "product_manager": {
+    "technical_questions": [
+      "How do you prioritize product features when resources are limited?",
+      "Describe a time you managed conflicting stakeholder interests.",
+      "How do you define and measure product success?",
+      "Explain your experience with agile methodologies.",
+      "How do you gather and incorporate user feedback?",
+      "Describe a product launch you managed and the challenges you faced.",
+      "How do you handle scope creep in projects?",
+      "What's your approach to competitive analysis?"
+    ],
+    "behavioral_questions": [
+      "Tell me about a time you had to say no to a feature request.",
+      "Describe a situation where you had to make a decision with incomplete data.",
+      "How do you handle disagreements with engineering teams?",
+      "Tell me about a product that failed and what you learned."
+    ]
+  },
+  "marketing": {
+    "technical_questions": [
+      "Describe a successful marketing campaign you've managed.",
+      "How do you measure the ROI of marketing activities?",
+      "What tools do you use for marketing analytics?",
+      "How do you stay updated with marketing trends?",
+      "Describe a time you had to work with a limited budget.",
+      "How do you approach target audience segmentation?",
+      "What's your experience with digital marketing channels?",
+      "How do you handle negative feedback on marketing campaigns?"
+    ],
+    "behavioral_questions": [
+      "Tell me about a time you had to manage a marketing crisis.",
+      "Describe a situation where a campaign didn't perform as expected.",
+      "How do you handle creative disagreements with team members?",
+      "Tell me about a time you had to work with a difficult client."
+    ]
+  },
+  "generic": {
+    "general_questions": [
+      "Tell me about yourself and your background.",
+      "Why are you interested in this position and our company?",
+      "What are your greatest strengths and areas for improvement?",
+      "Describe a significant challenge you've overcome in your career.",
+      "Where do you see yourself in 5 years?",
+      "Why are you looking to leave your current position?",
+      "What motivates you in your work?",
+      "How do you handle stress and pressure?",
+      "Describe your ideal work environment.",
+      "What are your salary expectations?"
+    ]
+  }
+} 
