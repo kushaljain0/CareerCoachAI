@@ -2,6 +2,9 @@
 
 A full-stack AI assistant that helps job seekers with resume feedback, mock interview preparation, and career advice using Retrieval-Augmented Generation (RAG) and Model Context Protocol (MCP).
 
+## 🎥 Demo Screencast
+📺 **[Watch the Full Demo on YouTube](https://youtu.be/AS-eApnC8xI)** - 15-20 minute walkthrough covering design decisions, architecture, and live demonstration of all features.
+
 ## Domain Selection
 
 This project focuses on **Career Coaching and Job Search Assistance**, a domain that is particularly well-suited for RAG + tools because:
