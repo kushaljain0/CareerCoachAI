@@ -2,15 +2,18 @@ import os
 import sys
 import logging
 from fastapi import FastAPI, HTTPException
+from fastapi.responses import StreamingResponse
 from pydantic import BaseModel
 from typing import List, Dict, Optional
 from dotenv import load_dotenv
 import uvicorn
 import subprocess
+import json
+import asyncio
 
 # Import our custom modules
 from mcp_server.llm_client import llm_client
-from prompts.rag_prompt import get_rag_prompt, get_tool_prompt
+from prompts.rag_prompt import get_rag_prompt, get_tool_prompt, get_clean_rag_prompt
 from rag.retrieval import retrieve
 
 load_dotenv()
@@ -42,6 +45,18 @@ class ChatRequest(BaseModel):
     message: str
     use_rag: bool = True
     use_tools: bool = True
+
+class EnhancedChatRequest(BaseModel):
+    message: str
+    conversation_history: Optional[List[Dict]] = []
+    format_preference: Optional[str] = "markdown"  # markdown, plain, code
+    auto_tool_selection: bool = True
+
+class StreamingChatRequest(BaseModel):
+    message: str
+    conversation_history: Optional[List[Dict]] = []
+    format_preference: Optional[str] = "markdown"
+    auto_tool_selection: bool = True
 
 # --- Tool 1: Enhanced Resume Analysis ---
 @app.post("/tools/analyze_resume")
@@ -325,6 +340,597 @@ def chat_with_assistant(req: ChatRequest):
     except Exception as e:
         logger.error(f"Chat processing failed: {e}")
         raise HTTPException(status_code=500, detail=f"Chat processing failed: {str(e)}")
+
+# --- Enhanced Chat Endpoint with Auto Tool Selection ---
+@app.post("/chat/enhanced")
+async def enhanced_chat_with_assistant(req: EnhancedChatRequest):
+    """
+    Enhanced chat endpoint with automatic tool selection and formatting options.
+    
+    This endpoint:
+    - Automatically detects user intent and selects appropriate tools
+    - Supports multiple formatting options (markdown, plain, code)
+    - Maintains conversation context
+    - Provides structured responses with tool usage information
+    """
+    try:
+        # Build context from conversation history
+        context = ""
+        if req.conversation_history:
+            context = "\n".join([
+                f"{'User' if msg.get('role') == 'user' else 'Assistant'}: {msg.get('content', '')}"
+                for msg in req.conversation_history[-5:]  # Last 5 messages for context
+            ])
+        
+        # Enhanced intent analysis with context
+        intent_prompt = f"""
+        Analyze this user query and determine the best action to take.
+        
+        Conversation Context:
+        {context}
+        
+        Current Query: "{req.message}"
+        
+        Available Tools:
+        1. analyze_resume - For resume feedback and analysis
+        2. mock_interview - For interview preparation and questions
+        3. career_guides - For general career advice and guidance
+        
+        Determine the intent and required action:
+        - If user wants resume analysis: return "RESUME_ANALYSIS"
+        - If user wants interview help: return "INTERVIEW_PREP"
+        - If user asks for career advice: return "CAREER_ADVICE"
+        - If user provides resume text: return "ANALYZE_RESUME_TEXT"
+        - If user provides position for interview: return "GENERATE_INTERVIEW_QUESTIONS"
+        - If unclear or general question: return "GENERAL_CHAT"
+        
+        Respond with just the action type.
+        """
+        
+        intent_response = llm_client.generate_response(intent_prompt, max_tokens=50).strip()
+        
+        # Execute based on detected intent
+        if "RESUME_ANALYSIS" in intent_response:
+            return {
+                "response": "I'd be happy to analyze your resume! Please paste your resume text below, and I'll provide detailed feedback on structure, content, and improvements.",
+                "action": "request_resume_text",
+                "format": req.format_preference,
+                "tools_used": [],
+                "reasoning": "User requested resume analysis"
+            }
+        
+        elif "ANALYZE_RESUME_TEXT" in intent_response:
+            # Extract resume text from message (assuming it's the main content)
+            resume_text = req.message.strip()
+            if len(resume_text) < 50:
+                return {
+                    "response": "I need more resume content to provide meaningful analysis. Please paste your complete resume text.",
+                    "action": "request_more_resume_text",
+                    "format": req.format_preference,
+                    "tools_used": [],
+                    "reasoning": "Insufficient resume content provided"
+                }
+            
+            # Call resume analysis tool
+            try:
+                analysis_result = analyze_resume(ResumeRequest(resume_text=resume_text))
+                
+                if req.format_preference == "markdown":
+                    response = f"""## Resume Analysis Results
+
+**Analysis Type:** {analysis_result.get('analysis_type', 'Unknown')}
+**Resume Length:** {analysis_result.get('resume_length', 0)} characters
+
+### Feedback:
+{analysis_result.get('feedback', 'No feedback available')}
+
+---
+*Analysis completed using AI-enhanced tools*"""
+                elif req.format_preference == "code":
+                    # Handle feedback properly for JSON
+                    feedback = analysis_result.get('feedback', 'No feedback available')
+                    if isinstance(feedback, list):
+                        feedback_str = str(feedback)
+                    else:
+                        feedback_str = str(feedback)
+                    response = f"""```json
+{{
+  "analysis_type": "{analysis_result.get('analysis_type', 'Unknown')}",
+  "resume_length": {analysis_result.get('resume_length', 0)},
+  "feedback": {feedback_str}
+}}
+```"""
+                else:
+                    response = f"Resume Analysis Results:\n\nAnalysis Type: {analysis_result.get('analysis_type', 'Unknown')}\nResume Length: {analysis_result.get('resume_length', 0)} characters\n\nFeedback:\n{analysis_result.get('feedback', 'No feedback available')}"
+                
+                return {
+                    "response": response,
+                    "action": "resume_analysis_complete",
+                    "format": req.format_preference,
+                    "tools_used": ["analyze_resume"],
+                    "reasoning": "Successfully analyzed resume using AI tools"
+                }
+            except Exception as e:
+                return {
+                    "response": f"Sorry, I encountered an error while analyzing your resume: {str(e)}",
+                    "action": "error",
+                    "format": req.format_preference,
+                    "tools_used": [],
+                    "reasoning": f"Resume analysis failed: {str(e)}"
+                }
+        
+        elif "INTERVIEW_PREP" in intent_response:
+            return {
+                "response": "I can help you prepare for interviews! What position are you interviewing for? I'll generate relevant questions and preparation tips.",
+                "action": "request_interview_position",
+                "format": req.format_preference,
+                "tools_used": [],
+                "reasoning": "User requested interview preparation"
+            }
+        
+        elif "GENERATE_INTERVIEW_QUESTIONS" in intent_response:
+            # Extract position from message
+            position = req.message.strip()
+            if len(position) < 3:
+                return {
+                    "response": "Please specify the position you're interviewing for so I can provide relevant questions.",
+                    "action": "request_interview_position",
+                    "format": req.format_preference,
+                    "tools_used": [],
+                    "reasoning": "Position not specified"
+                }
+            
+            # Call mock interview tool
+            try:
+                interview_result = mock_interview(InterviewRequest(position=position))
+                
+                if req.format_preference == "markdown":
+                    questions_text = "\n".join([f"{i+1}. {q}" for i, q in enumerate(interview_result.get('questions', []))])
+                    response = f"""## Interview Questions for {position}
+
+**Generation Type:** {interview_result.get('generation_type', 'Unknown')}
+
+### Questions:
+{questions_text}
+
+### Preparation Tips:
+- Practice your responses out loud
+- Use the STAR method for behavioral questions
+- Research the company and role thoroughly
+- Prepare questions to ask the interviewer
+
+---
+*Questions generated using AI-enhanced tools*"""
+                elif req.format_preference == "code":
+                    response = f"""```json
+{{
+  "position": "{position}",
+  "generation_type": "{interview_result.get('generation_type', 'Unknown')}",
+  "questions": {interview_result.get('questions', [])}
+}}
+```"""
+                else:
+                    questions_text = "\n".join([f"{i+1}. {q}" for i, q in enumerate(interview_result.get('questions', []))])
+                    response = f"Interview Questions for {position}:\n\n{questions_text}"
+                
+                return {
+                    "response": response,
+                    "action": "interview_questions_generated",
+                    "format": req.format_preference,
+                    "tools_used": ["mock_interview"],
+                    "reasoning": f"Generated interview questions for {position}"
+                }
+            except Exception as e:
+                return {
+                    "response": f"Sorry, I encountered an error while generating interview questions: {str(e)}",
+                    "action": "error",
+                    "format": req.format_preference,
+                    "tools_used": [],
+                    "reasoning": f"Interview question generation failed: {str(e)}"
+                }
+        
+        elif "CAREER_ADVICE" in intent_response:
+            # Use RAG for career advice
+            try:
+                # Retrieve relevant documents
+                retrieved_docs = retrieve(req.message, 3)
+                context = "\n\n".join([doc['chunk'] for doc in retrieved_docs])
+                
+                if llm_client.is_available():
+                    prompt = get_clean_rag_prompt(context, req.message)
+                    advice = llm_client.generate_response(prompt)
+                else:
+                    advice = f"Based on our career guides, here's what I found:\n\n{context[:1000]}..."
+                
+                if req.format_preference == "markdown":
+                    sources_text = "\n".join([f"- {source}" for source in [doc['metadata']['file'] for doc in retrieved_docs]])
+                    response = f"""## Career Advice
+
+{advice}
+
+### Sources:
+{sources_text}
+
+---
+*Advice generated using RAG-enhanced knowledge base*"""
+                elif req.format_preference == "code":
+                    # Escape quotes properly for JSON
+                    escaped_advice = advice.replace('"', '\\"').replace('\n', '\\n')
+                    response = f"""```json
+{{
+  "advice": "{escaped_advice}",
+  "sources": {[doc['metadata']['file'] for doc in retrieved_docs]}
+}}
+```"""
+                else:
+                    response = f"Career Advice:\n\n{advice}\n\nSources: {', '.join([doc['metadata']['file'] for doc in retrieved_docs])}"
+                
+                return {
+                    "response": response,
+                    "action": "career_advice_provided",
+                    "format": req.format_preference,
+                    "tools_used": ["career_guides"],
+                    "reasoning": "Provided career advice using RAG"
+                }
+            except Exception as e:
+                return {
+                    "response": f"Sorry, I encountered an error while retrieving career advice: {str(e)}",
+                    "action": "error",
+                    "format": req.format_preference,
+                    "tools_used": [],
+                    "reasoning": f"Career advice retrieval failed: {str(e)}"
+                }
+        
+        else:
+            # General chat response
+            general_response = "I'm here to help with your career development! I can assist with:\n\n- **Resume Analysis**: Get detailed feedback on your resume\n- **Interview Preparation**: Receive role-specific interview questions\n- **Career Advice**: Access expert guidance on career transitions and development\n\nWhat would you like to work on today?"
+            
+            if req.format_preference == "markdown":
+                response = f"""## Welcome to Career Coach AI!
+
+{general_response}
+
+---
+*Ready to help with your career goals*"""
+            elif req.format_preference == "code":
+                response = f"""```json
+{{
+  "message": "Welcome to Career Coach AI!",
+  "capabilities": [
+    "Resume Analysis",
+    "Interview Preparation", 
+    "Career Advice"
+  ]
+}}
+```"""
+            else:
+                response = general_response
+            
+            return {
+                "response": response,
+                "action": "general_chat",
+                "format": req.format_preference,
+                "tools_used": [],
+                "reasoning": "Provided general welcome and capabilities overview"
+            }
+    
+    except Exception as e:
+        logger.error(f"Enhanced chat processing failed: {e}")
+        return {
+            "response": f"I apologize, but I encountered an error while processing your request: {str(e)}",
+            "action": "error",
+            "format": req.format_preference,
+            "tools_used": [],
+            "reasoning": f"Enhanced chat processing failed: {str(e)}"
+        }
+
+# --- Streaming Chat Endpoint ---
+@app.post("/chat/stream")
+async def streaming_chat_with_assistant(req: StreamingChatRequest):
+    """
+    Streaming chat endpoint with real-time responses.
+    
+    This endpoint:
+    - Provides real-time streaming responses
+    - Automatically detects user intent and selects appropriate tools
+    - Supports multiple formatting options
+    - Uses Server-Sent Events (SSE) for streaming
+    """
+    
+    async def generate_stream():
+        try:
+            # Build context from conversation history
+            context = ""
+            if req.conversation_history:
+                context = "\n".join([
+                    f"{'User' if msg.get('role') == 'user' else 'Assistant'}: {msg.get('content', '')}"
+                    for msg in req.conversation_history[-5:]  # Last 5 messages for context
+                ])
+            
+            # Send initial thinking message
+            yield f"data: {json.dumps({'type': 'thinking', 'content': 'Analyzing your request...'})}\n\n"
+            
+            # Enhanced intent analysis with context
+            intent_prompt = f"""
+            Analyze this user query and determine the best action to take.
+            
+            Conversation Context:
+            {context}
+            
+            Current Query: "{req.message}"
+            
+            Available Tools:
+            1. analyze_resume - For resume feedback and analysis
+            2. mock_interview - For interview preparation and questions
+            3. career_guides - For general career advice and guidance
+            
+            Determine the intent and required action:
+            - If user wants resume analysis: return "RESUME_ANALYSIS"
+            - If user wants interview help: return "INTERVIEW_PREP"
+            - If user asks for career advice: return "CAREER_ADVICE"
+            - If user provides resume text: return "ANALYZE_RESUME_TEXT"
+            - If user provides position for interview: return "GENERATE_INTERVIEW_QUESTIONS"
+            - If unclear or general question: return "GENERAL_CHAT"
+            
+            Respond with just the action type.
+            """
+            
+            intent_response = llm_client.generate_response(intent_prompt, max_tokens=50).strip()
+            
+            # Send intent detection message
+            yield f"data: {json.dumps({'type': 'intent', 'content': f'Detected intent: {intent_response}'})}\n\n"
+            
+            # Execute based on detected intent
+            if "RESUME_ANALYSIS" in intent_response:
+                response = "I'd be happy to analyze your resume! Please paste your resume text below, and I'll provide detailed feedback on structure, content, and improvements."
+                action = "request_resume_text"
+                tools_used = []
+                reasoning = "User requested resume analysis"
+                
+            elif "ANALYZE_RESUME_TEXT" in intent_response:
+                # Extract resume text from message
+                resume_text = req.message.strip()
+                if len(resume_text) < 50:
+                    response = "I need more resume content to provide meaningful analysis. Please paste your complete resume text."
+                    action = "request_more_resume_text"
+                    tools_used = []
+                    reasoning = "Insufficient resume content provided"
+                else:
+                    # Send processing message
+                    yield f"data: {json.dumps({'type': 'processing', 'content': 'Analyzing your resume...'})}\n\n"
+                    
+                    # Call resume analysis tool
+                    try:
+                        # Show tool call step
+                        yield f"data: {json.dumps({'type': 'tool_call', 'content': '📄 Calling resume analysis tool...'})}\n\n"
+                        
+                        analysis_result = analyze_resume(ResumeRequest(resume_text=resume_text))
+                        
+                        # Show tool result
+                        analysis_type = analysis_result.get('analysis_type', 'Unknown')
+                        yield f"data: {json.dumps({'type': 'tool_result', 'content': f'✅ Resume analysis completed using {analysis_type} method'})}\n\n"
+                        
+                        if req.format_preference == "markdown":
+                            response = f"""## Resume Analysis Results
+
+**Analysis Type:** {analysis_result.get('analysis_type', 'Unknown')}
+**Resume Length:** {analysis_result.get('resume_length', 0)} characters
+
+### Feedback:
+{analysis_result.get('feedback', 'No feedback available')}
+
+---
+*Analysis completed using AI-enhanced tools*"""
+                        elif req.format_preference == "code":
+                            # Handle feedback properly for JSON
+                            feedback = analysis_result.get('feedback', 'No feedback available')
+                            if isinstance(feedback, list):
+                                feedback_str = str(feedback)
+                            else:
+                                feedback_str = str(feedback)
+                            response = f"""```json
+{{
+  "analysis_type": "{analysis_result.get('analysis_type', 'Unknown')}",
+  "resume_length": {analysis_result.get('resume_length', 0)},
+  "feedback": {feedback_str}
+}}
+```"""
+                        else:
+                            response = f"Resume Analysis Results:\n\nAnalysis Type: {analysis_result.get('analysis_type', 'Unknown')}\nResume Length: {analysis_result.get('resume_length', 0)} characters\n\nFeedback:\n{analysis_result.get('feedback', 'No feedback available')}"
+                        
+                        action = "resume_analysis_complete"
+                        tools_used = ["analyze_resume"]
+                        reasoning = "Successfully analyzed resume using AI tools"
+                        
+                    except Exception as e:
+                        response = f"Sorry, I encountered an error while analyzing your resume: {str(e)}"
+                        action = "error"
+                        tools_used = []
+                        reasoning = f"Resume analysis failed: {str(e)}"
+            
+            elif "INTERVIEW_PREP" in intent_response:
+                response = "I can help you prepare for interviews! What position are you interviewing for? I'll generate relevant questions and preparation tips."
+                action = "request_interview_position"
+                tools_used = []
+                reasoning = "User requested interview preparation"
+            
+            elif "GENERATE_INTERVIEW_QUESTIONS" in intent_response:
+                # Extract position from message
+                position = req.message.strip()
+                if len(position) < 3:
+                    response = "Please specify the position you're interviewing for so I can provide relevant questions."
+                    action = "request_interview_position"
+                    tools_used = []
+                    reasoning = "Position not specified"
+                else:
+                    # Send processing message
+                    yield f"data: {json.dumps({'type': 'processing', 'content': f'Generating interview questions for {position}...'})}\n\n"
+                    
+                    # Call mock interview tool
+                    try:
+                        # Show tool call step
+                        yield f"data: {json.dumps({'type': 'tool_call', 'content': f'🎯 Calling mock interview tool for {position}...'})}\n\n"
+                        
+                        interview_result = mock_interview(InterviewRequest(position=position))
+                        
+                        # Show tool result
+                        generation_type = interview_result.get('generation_type', 'Unknown')
+                        yield f"data: {json.dumps({'type': 'tool_result', 'content': f'✅ Interview questions generated using {generation_type} method'})}\n\n"
+                        
+                        if req.format_preference == "markdown":
+                            questions_text = "\n".join([f"{i+1}. {q}" for i, q in enumerate(interview_result.get('questions', []))])
+                            response = f"""## Interview Questions for {position}
+
+**Generation Type:** {interview_result.get('generation_type', 'Unknown')}
+
+### Questions:
+{questions_text}
+
+### Preparation Tips:
+- Practice your responses out loud
+- Use the STAR method for behavioral questions
+- Research the company and role thoroughly
+- Prepare questions to ask the interviewer
+
+---
+*Questions generated using AI-enhanced tools*"""
+                        elif req.format_preference == "code":
+                            response = f"""```json
+{{
+  "position": "{position}",
+  "generation_type": "{interview_result.get('generation_type', 'Unknown')}",
+  "questions": {interview_result.get('questions', [])}
+}}
+```"""
+                        else:
+                            questions_text = "\n".join([f"{i+1}. {q}" for i, q in enumerate(interview_result.get('questions', []))])
+                            response = f"Interview Questions for {position}:\n\n{questions_text}"
+                        
+                        action = "interview_questions_generated"
+                        tools_used = ["mock_interview"]
+                        reasoning = f"Generated interview questions for {position}"
+                        
+                    except Exception as e:
+                        response = f"Sorry, I encountered an error while generating interview questions: {str(e)}"
+                        action = "error"
+                        tools_used = []
+                        reasoning = f"Interview question generation failed: {str(e)}"
+            
+            elif "CAREER_ADVICE" in intent_response:
+                # Send processing message
+                yield f"data: {json.dumps({'type': 'processing', 'content': 'Searching for career advice...'})}\n\n"
+                
+                # Use RAG for career advice
+                try:
+                    # Show RAG retrieval step
+                    yield f"data: {json.dumps({'type': 'tool_call', 'content': '🔍 Retrieving relevant career guides...'})}\n\n"
+                    
+                    retrieved_docs = retrieve(req.message, 3)
+                    sources = [doc['metadata']['file'] for doc in retrieved_docs]
+                    
+                    # Show what was found
+                    sources_text = ", ".join(sources)
+                    yield f"data: {json.dumps({'type': 'tool_result', 'content': f'📚 Found guides: {sources_text}'})}\n\n"
+                    
+                    context = "\n\n".join([doc['chunk'] for doc in retrieved_docs])
+                    
+                    if llm_client.is_available():
+                        # Show LLM processing step
+                        yield f"data: {json.dumps({'type': 'llm_processing', 'content': '🤖 Generating personalized advice using AI...'})}\n\n"
+                        
+                        prompt = get_clean_rag_prompt(context, req.message)
+                        advice = llm_client.generate_response(prompt)
+                    else:
+                        advice = f"Based on our career guides, here's what I found:\n\n{context[:1000]}..."
+                    
+                    if req.format_preference == "markdown":
+                        sources_text = "\n".join([f"- {source}" for source in [doc['metadata']['file'] for doc in retrieved_docs]])
+                        response = f"""## Career Advice
+
+{advice}
+
+### Sources:
+{sources_text}
+
+---
+*Advice generated using RAG-enhanced knowledge base*"""
+                    elif req.format_preference == "code":
+                        # Escape quotes properly for JSON
+                        escaped_advice = advice.replace('"', '\\"').replace('\n', '\\n')
+                        response = f"""```json
+{{
+  "advice": "{escaped_advice}",
+  "sources": {[doc['metadata']['file'] for doc in retrieved_docs]}
+}}
+```"""
+                    else:
+                        response = f"Career Advice:\n\n{advice}\n\nSources: {', '.join([doc['metadata']['file'] for doc in retrieved_docs])}"
+                    
+                    action = "career_advice_provided"
+                    tools_used = ["career_guides"]
+                    reasoning = "Provided career advice using RAG"
+                    
+                except Exception as e:
+                    response = f"Sorry, I encountered an error while retrieving career advice: {str(e)}"
+                    action = "error"
+                    tools_used = []
+                    reasoning = f"Career advice retrieval failed: {str(e)}"
+            
+            else:
+                # General chat response
+                general_response = "I'm here to help with your career development! I can assist with:\n\n- **Resume Analysis**: Get detailed feedback on your resume\n- **Interview Preparation**: Receive role-specific interview questions\n- **Career Advice**: Access expert guidance on career transitions and development\n\nWhat would you like to work on today?"
+                
+                if req.format_preference == "markdown":
+                    response = f"""## Welcome to Career Coach AI!
+
+{general_response}
+
+---
+*Ready to help with your career goals*"""
+                elif req.format_preference == "code":
+                    response = f"""```json
+{{
+  "message": "Welcome to Career Coach AI!",
+  "capabilities": [
+    "Resume Analysis",
+    "Interview Preparation", 
+    "Career Advice"
+  ]
+}}
+```"""
+                else:
+                    response = general_response
+                
+                action = "general_chat"
+                tools_used = []
+                reasoning = "Provided general welcome and capabilities overview"
+            
+            # Stream the response in chunks
+            chunk_size = 50  # Characters per chunk
+            for i in range(0, len(response), chunk_size):
+                chunk = response[i:i + chunk_size]
+                yield f"data: {json.dumps({'type': 'content', 'content': chunk, 'is_final': i + chunk_size >= len(response)})}\n\n"
+                await asyncio.sleep(0.05)  # Small delay for smooth streaming
+            
+            # Send final metadata
+            yield f"data: {json.dumps({'type': 'metadata', 'action': action, 'tools_used': tools_used, 'reasoning': reasoning, 'format': req.format_preference})}\n\n"
+            yield f"data: {json.dumps({'type': 'done'})}\n\n"
+            
+        except Exception as e:
+            logger.error(f"Streaming chat processing failed: {e}")
+            error_response = f"I apologize, but I encountered an error while processing your request: {str(e)}"
+            yield f"data: {json.dumps({'type': 'error', 'content': error_response})}\n\n"
+            yield f"data: {json.dumps({'type': 'done'})}\n\n"
+    
+    return StreamingResponse(
+        generate_stream(),
+        media_type="text/plain",
+        headers={
+            "Cache-Control": "no-cache",
+            "Connection": "keep-alive",
+            "Content-Type": "text/event-stream",
+        }
+    )
 
 # --- Health Check and Info Endpoints ---
 @app.get("/")

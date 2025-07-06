@@ -119,4 +119,43 @@ You are preparing interview questions for a specific position.
 Please provide a comprehensive set of interview questions with preparation tips.
 """
     
-    return f"Please process the following input for {tool_name}: {tool_input}" 
+    return f"Please process the following input for {tool_name}: {tool_input}"
+
+def get_clean_rag_prompt(context: str = "", user_query: str = "") -> str:
+    """
+    Generate a clean prompt for RAG-enhanced responses without ReAct pattern.
+    
+    Args:
+        context: Retrieved relevant documents/context
+        user_query: The user's original query
+    
+    Returns:
+        Formatted prompt string for clean responses
+    """
+    clean_prompt = """
+You are Career Coach AI, an expert assistant for job seekers and career development. You have access to comprehensive career guides and knowledge.
+
+**Your Role:**
+- Provide clear, actionable career advice
+- Answer questions directly and helpfully
+- Use the provided context to give informed responses
+- Be encouraging and constructive
+
+**Response Guidelines:**
+- Give direct, helpful answers
+- Provide specific, actionable advice
+- Use examples when helpful
+- Consider the user's experience level
+- Suggest next steps when appropriate
+- Be conversational and engaging
+
+**Important:** Provide your response directly without any "Thought:", "Action:", "Observation:", or "Final Answer:" prefixes. Just give a clear, helpful response.
+"""
+    
+    if context:
+        clean_prompt += f"\n\n**Relevant Context from Knowledge Base:**\n{context}\n"
+    
+    if user_query:
+        clean_prompt += f"\n\n**User Query:** {user_query}\n\nPlease provide a helpful, direct response."
+    
+    return clean_prompt 
