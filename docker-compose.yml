@@ -1,0 +1,57 @@
+services:
+  # Python Backend (MCP Server + RAG)
+  backend:
+    build:
+      context: .
+      dockerfile: Dockerfile.backend
+    ports:
+      - "8000:8000"
+    environment:
+      - OPENAI_API_KEY=${OPENAI_API_KEY}
+      - OPENAI_MODEL=${OPENAI_MODEL:-gpt-4}
+      - EMBEDDING_MODEL=${EMBEDDING_MODEL:-all-MiniLM-L6-v2}
+      - VECTOR_DB_PATH=/app/data/vector_db
+      - CHUNK_SIZE=${CHUNK_SIZE:-1000}
+      - CHUNK_OVERLAP=${CHUNK_OVERLAP:-200}
+      - TOP_K_RESULTS=${TOP_K_RESULTS:-5}
+      - MCP_SERVER_HOST=0.0.0.0
+      - MCP_SERVER_PORT=8000
+    volumes:
+      - ./data:/app/data
+      - vector_db:/app/data/vector_db
+    depends_on:
+      - redis
+    networks:
+      - career-coach-network
+
+  # React Frontend
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile.frontend
+    ports:
+      - "3000:3000"
+    environment:
+      - VITE_API_BASE_URL=http://localhost:8000
+    depends_on:
+      - backend
+    networks:
+      - career-coach-network
+
+  # Redis for caching (optional)
+  redis:
+    image: redis:7-alpine
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_data:/data
+    networks:
+      - career-coach-network
+
+volumes:
+  vector_db:
+  redis_data:
+
+networks:
+  career-coach-network:
+    driver: bridge 

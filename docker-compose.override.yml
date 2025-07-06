@@ -1,0 +1,26 @@
+services:
+  # Development backend with hot reload
+  backend:
+    build:
+      context: .
+      dockerfile: Dockerfile.backend.dev
+    volumes:
+      - ./rag:/app/rag
+      - ./mcp_server:/app/mcp_server
+      - ./data:/app/data
+    environment:
+      - PYTHONPATH=/app
+    command: ["python", "-m", "uvicorn", "mcp_server.server:app", "--host", "0.0.0.0", "--port", "8000", "--reload"]
+
+  # Development frontend with hot reload
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile.frontend.dev
+    volumes:
+      - ./frontend/src:/app/src
+      - ./frontend/public:/app/public
+      - ./frontend/package.json:/app/package.json
+    environment:
+      - NODE_ENV=development
+    command: ["npm", "run", "dev"] 
