@@ -17,6 +17,8 @@ This project focuses on **Career Coaching and Job Search Assistance**, a domain 
 - **Resume Analysis**: Get detailed feedback on your resume with specific improvement suggestions using LLM-enhanced analysis
 - **Mock Interview Preparation**: Receive role-specific interview questions and preparation tips
 - **Career Advice**: Access curated career guidance from indexed documents using RAG
+- **Enhanced Chat Interface**: Intelligent chat with automatic tool selection and multiple formatting options
+- **Streaming Chat**: Real-time streaming responses with Server-Sent Events for better user experience
 - **RAG Pipeline**: Semantic search across 20+ career documents for relevant advice
 - **MCP Server**: FastMCP-based tools for seamless AI interactions
 - **Modern Web UI**: Beautiful React frontend with Material UI
@@ -144,6 +146,54 @@ Action: retrieve(query="transition from marketing to data science")
 Observation: RAG returns career transition and skills development guides
 Final Answer: Here's a step-by-step plan to transition from marketing to data science...
 ```
+
+### 4. Enhanced Chat Interface
+```
+User: "Can you help me with my resume?"
+Assistant: I'd be happy to analyze your resume! Please paste your resume text below, and I'll provide detailed feedback on structure, content, and improvements.
+
+User: [pastes resume text]
+Assistant: 
+## Resume Analysis Results
+
+**Analysis Type:** llm_enhanced
+**Resume Length:** 1,247 characters
+
+### Feedback:
+- Strong use of action verbs: developed, managed, created
+- Consider adding more quantifiable achievements
+- Good structure with clear sections
+- Skills section could be more specific to your target role
+
+---
+*Analysis completed using AI-enhanced tools*
+```
+
+The enhanced chat interface automatically:
+- Detects user intent and selects appropriate tools
+- Supports markdown, plain text, and code formatting
+- Maintains conversation context
+- Shows which tools were used for transparency
+
+### 5. Streaming Chat Interface
+```
+User: "Can you help me prepare for a data scientist interview?"
+Assistant: [Streaming response appears in real-time]
+🤔 Analyzing your request...
+🎯 Detected intent: INTERVIEW_PREP
+⚙️ Generating interview questions for data scientist...
+📝 I can help you prepare for interviews! What position are you interviewing for? I'll generate relevant questions and preparation tips.
+📊 Tools used: ['mock_interview']
+🎯 Action: request_interview_position
+✅ Streaming completed!
+```
+
+The streaming chat interface provides:
+- **Real-time responses**: See responses as they're generated
+- **Progress indicators**: Visual feedback during processing
+- **Stream cancellation**: Stop responses mid-stream
+- **Smooth UX**: No waiting for complete responses
+- **Server-Sent Events**: Efficient streaming protocol
 
 ## Project Structure
 
