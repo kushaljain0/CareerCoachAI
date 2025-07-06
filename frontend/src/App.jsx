@@ -24,9 +24,13 @@ import {
   Work as WorkIcon,
   Description as DescriptionIcon,
   School as SchoolIcon,
-  Send as SendIcon
+  Send as SendIcon,
+  Chat as ChatIcon,
+  Stream as StreamIcon
 } from '@mui/icons-material'
 import axios from 'axios'
+import ChatInterface from './components/ChatInterface'
+import StreamingChatInterface from './components/StreamingChatInterface'
 
 const API_BASE = '/api'
 
@@ -174,6 +178,8 @@ function App() {
             <Tab icon={<DescriptionIcon />} label="Resume Analysis" />
             <Tab icon={<SchoolIcon />} label="Mock Interview" />
             <Tab icon={<WorkIcon />} label="Career Advice" />
+            <Tab icon={<ChatIcon />} label="Chat" />
+            <Tab icon={<StreamIcon />} label="Streaming Chat" />
           </Tabs>
         </Box>
 
@@ -260,7 +266,15 @@ function App() {
           </Card>
         </TabPanel>
 
-        {messages.length > 0 && (
+        <TabPanel value={tabValue} index={3}>
+          <ChatInterface />
+        </TabPanel>
+
+        <TabPanel value={tabValue} index={4}>
+          <StreamingChatInterface />
+        </TabPanel>
+
+        {messages.length > 0 && tabValue !== 3 && tabValue !== 4 && (
           <Card sx={{ mt: 4 }}>
             <CardContent>
               <Typography variant="h6" gutterBottom>
